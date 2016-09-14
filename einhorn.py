@@ -14,22 +14,30 @@ auth.set_access_token(config['AUTH']['access_token'],config['AUTH']['access_secr
 api = tweepy.API(auth)
 
 dict_of_bullshit = {
-    'alternative':['Glitzer', 'Bananen'],
+    # 'alternative':['Glitzer', 'Bananen'],
+    'spitzenkandidat': ['Tinder Date'],
+    'spitzenkandidaten': ['Tinder Dates'],
     'islamisten' :['Piraten', 'Faschisten', 'AfD Mitglieder'],
-    'asylmissbrauch': ['Robbenbabys', 'Robbenkloppen'],
+    'asylmissbrauch': ['Robbenbaby', 'Robbenkloppen'],
+    'asylbewerber': ['Süße Gummibärchen', 'Bärchis <3'],
     'quote' : ['Torte'],
     'petry' : ['Petri Heil'],
+    'holm' : ['Strohhalm'],
+    'pazderski' : ['Panzertape'],
+    'hampel' : ['Hampelmann'],
     'ausländer':['Einhörner'],
-    'von Storch':['vom Strauch', 'der Storch'],
+    'von storch':['vom Strauch', 'der Storch'],
     'wirtschaft':['Raumfahrt', 'Klassenfahrt'],
     'deutschland':['Schland', 'Lummerland'],
     'schande' :['Sahne'],
     'migranten' : ['Passanten'],
     'grenze' : ['Hose'],
-    'flüchtlinge' : ['Spätzle'],
+    'grenzen' : ['Hosen'],
+    'flüchtlinge' : ['Spätzle', 'Freunde'],
     '#merkel' : ['#MettIgel', '#MerktNix'],
+    'merkel' : ['Mutti', 'Mama'],
     'soldaten' : ['Legofiguren'],
-    'bundeswehr' : ['Nationalmanschaft', 'Gurkentruppe'],
+    'bundeswehr' : ['Nationalmanschaft'],
     'meuthen' : ['Mutantenkönig', 'Mupfelkönig'],
     'afd-mitglieder':['Männerchor','Stadtmusikanten'],
     'wahrheit':['Schoki'],
@@ -38,51 +46,79 @@ dict_of_bullshit = {
     'gauland':['Bauland', 'der geht nochn Meter', 'Sauland', 'Stauland'],
     'alternativefuer.de':['hasshilft.de'],
     'asylpolitik':['Zirkuszelte'],
+    'linken' : ['Rechten'],
+    'rechtsstaat' : ['Kartoffelsalat'],
+    'ausländisch' : ['heimisch'],
+    'imame' : ['Zuckerbäcker', 'Zombies'],
+    '#npd' : ['#sexindustrie'],
+    '#ungarn' : ['#FrauMalzahn'],
+    'minderjährige' : ['Kaugummis', 'Zombies'],
+    'massenzuwanderung' : ['Krieg der Sterne'],
+    'gender' : ['Piepmatz', 'Willi in der Buchse'],
+    'lösegeld' : ['Schokopudding'],
+    'integration' : ['Hüpfburg'],
 }
 
 pattern = re.compile('|'.join(dict_of_bullshit.keys()), re.IGNORECASE)
-most_recent_status_id = 773136476364210176
+most_recent_status_ids = {}
 
 def substituion(match):
     try:
-        # print('match: ' + match.group().lower())
         replacement = random.choice(dict_of_bullshit[match.group().lower()])
-        # print('replacment: '  + replacement)
         return replacement
     except KeyError:
         print('Error!')
 
 
+def fck_afd():
+    for u in ['AfD_Bund','AfD_Bayern', 'AfD_MV', 'AfD_Hessen', 'christianlueth']:
+        check_tweets_for_bullshit(user=u)
+        time.sleep(2)
+
 
 def check_tweets_for_bullshit(user='AfD_Bund'):
-    global most_recent_status_id
-    print(most_recent_status_id)
-    if most_recent_status_id:
-        bullshit_tweets = api.user_timeline(user, since_id=most_recent_status_id)
+    global most_recent_status_ids
+    last_id = None
+
+    if user in most_recent_status_ids:
+        last_id = most_recent_status_ids[user]
+
+    if last_id:
+        bullshit_tweets = api.user_timeline(user, since_id=last_id)
     else:
         bullshit_tweets = api.user_timeline(user)
     if not bullshit_tweets:
         print('No Tweets found.')
         return
 
-    # print('latest id' + str(bullshit_tweets[-1].id))
-    most_recent_status_id = bullshit_tweets[0].id
+    most_recent_status_ids[user] = bullshit_tweets[0].id
+
     for tweet in bullshit_tweets:
         new_text = pattern.sub(substituion, tweet.text)
         if new_text != tweet.text:
-            print('id:   {} : original tweet:---- \n {} \n new tweet:------\n {}'.format(tweet.id, tweet.text, new_text))
+            new_text = new_text.replace('#AfD', '#EfD')
             #shorten text
-            new_text = new_text[0:(140-(len(user) + 2))]
-            api.update_status('@{} {}'.format(user, new_text), in_reply_to_status_id=tweet.id)
+            new_text = new_text[0:139]
+            print('id:   {} : original tweet:---- \n {} \n new tweet:------\n {}'.format(tweet.id, tweet.text, new_text))
+
+            #api.update_status('@{} {}'.format(user, new_text), in_reply_to_status_id=tweet.id)
 
 
 
-def tweet_time_of_day(text='Es ist 12:00. Die AFD stinkt immernoch. #einhornfuerdeutschland'):
-    api.update_status(text)
+def tweet_time_of_day():
+    texts = [
+        'Es ist 12:00. Die AFD stinkt immernoch. #einhornfuerdeutschland www.hasshilft.de',
+        'Ich glaub es hackt! Besorgtes Einhorn macht sich sorgen über die Zukunft Deutschlands. #schland #einhornfuerdeutschland www.hasshilft.de',
+        'Your daily "diese verkackten AFD rassisten werden immernoch gewählt" reminder. #einhornfuerdeutschland www.hasshilft.de',
+        'Demnächst ist Wahl. Wählt das #einhornfuerdeutschland für eine bessere Zukunft! www.hasshilft.de',
+        'Wir müssen die Zukunft unserer Kinder schützen! Wählt das #einhornfuerdeutschland! www.hasshilft.de',
+        'Ayran für alle! #einhornfuerdeutschland #kbfr'
+    ]
+    api.update_status(random.choice(texts))
 
 def main():
 
-    schedule.every(2).minutes.do(check_tweets_for_bullshit)
+    schedule.every(2).minutes.do(fck_afd)
     schedule.every().day.at("12:00").do(tweet_time_of_day)
 
     while True:
