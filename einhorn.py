@@ -21,10 +21,6 @@ dict_of_bullshit = {
     'asylmissbrauch': ['Robbenbaby', 'Robbenkloppen'],
     'asylbewerber': ['Süße Gummibärchen', 'Bärchis <3'],
     'quote' : ['Torte'],
-    'petry' : ['Petri Heil'],
-    'holm' : ['Strohhalm'],
-    'pazderski' : ['Panzertape'],
-    'hampel' : ['Hampelmann'],
     'ausländer':['Einhörner'],
     'von storch':['vom Strauch', 'der Storch'],
     'wirtschaft':['Raumfahrt', 'Klassenfahrt'],
@@ -32,13 +28,11 @@ dict_of_bullshit = {
     'schande' :['Sahne'],
     'migranten' : ['Passanten'],
     'grenze' : ['Hose'],
-    'grenzen' : ['Hosen'],
     'flüchtlinge' : ['Spätzle', 'Freunde'],
     '#merkel' : ['#MettIgel', '#MerktNix'],
     'merkel' : ['Mutti', 'Mama'],
-    'soldaten' : ['Legofiguren'],
+    'soldaten' : ['Legofiguren', 'Pizzalieferanten'],
     'bundeswehr' : ['Nationalmanschaft'],
-    'meuthen' : ['Mutantenkönig', 'Mupfelkönig'],
     'afd-mitglieder':['Männerchor','Stadtmusikanten'],
     'wahrheit':['Schoki'],
     'kinder':['Rinder',],
@@ -57,21 +51,33 @@ dict_of_bullshit = {
     'gender' : ['Piepmatz', 'Willi in der Buchse'],
     'lösegeld' : ['Schokopudding'],
     'integration' : ['Hüpfburg'],
+    'linksradikalen' : ['besorgte Bürger'],
 }
 
-pattern = re.compile('|'.join(dict_of_bullshit.keys()), re.IGNORECASE)
+dict_of_jerks = {
+    'petry' : ['Petri Heil'],
+    'holm' : ['Strohhalm'],
+    'pazderski' : ['Panzertape'],
+    'hampel' : ['Hampelmann'],
+    'meuthen' : ['Mutantenkönig', 'Mupfelkönig'],
+}
+
+bullshit_pattern = re.compile('|'.join(dict_of_bullshit.keys()), re.IGNORECASE)
+jerks_pattern = re.compile('|'.join(dict_of_jerks.keys()), re.IGNORECASE)
+
+
 most_recent_status_ids = {}
 
-def substituion(match):
+def substituion(match, dict_of_replacements):
     try:
-        replacement = random.choice(dict_of_bullshit[match.group().lower()])
+        replacement = random.choice(dict_of_replacements[match.group().lower()])
         return replacement
     except KeyError:
         print('Error!')
 
 
 def fck_afd():
-    for u in ['AfD_Bund','AfD_Bayern', 'AfD_MV', 'AfD_Hessen', 'christianlueth']:
+    for u in ['AfD_Bund','AfD_Bayern', 'AfD_MV', 'AfD_Hessen', 'christianlueth','Wahlen_AfD_2016', 'AfDBerlin']:
         check_tweets_for_bullshit(user=u)
         time.sleep(2)
 
@@ -94,14 +100,17 @@ def check_tweets_for_bullshit(user='AfD_Bund'):
     most_recent_status_ids[user] = bullshit_tweets[0].id
 
     for tweet in bullshit_tweets:
-        new_text = pattern.sub(substituion, tweet.text)
-        if new_text != tweet.text:
+        bullshit_text = bullshit_pattern.sub(lambda match: substituion(match, dict_of_bullshit), tweet.text)
+        if bullshit_text != tweet.text:
+            new_text = jerks_pattern.sub(lambda match: substituion(match, dict_of_jerks), bullshit_text)
+            # if new_text != bullshit_text:
+            #     print('replaced some names')
             new_text = new_text.replace('#AfD', '#EfD')
             #shorten text
             new_text = new_text[0:139]
-            print('id:   {} : original tweet:---- \n {} \n new tweet:------\n {}'.format(tweet.id, tweet.text, new_text))
+            # print('id:   {} : original tweet:---- \n {} \n new tweet:------\n {}'.format(tweet.id, tweet.text, new_text))
 
-            #api.update_status('@{} {}'.format(user, new_text), in_reply_to_status_id=tweet.id)
+            api.update_status('@{} {}'.format(user, new_text), in_reply_to_status_id=tweet.id)
 
 
 
@@ -118,12 +127,12 @@ def tweet_time_of_day():
 
 def main():
 
-    schedule.every(2).minutes.do(fck_afd)
+    schedule.every(10).minutes.do(fck_afd)
     schedule.every().day.at("12:00").do(tweet_time_of_day)
 
     while True:
         schedule.run_pending()
-        time.sleep(10)
+        time.sleep(60)
 
 if __name__ == '__main__':
     main()
